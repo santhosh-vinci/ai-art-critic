@@ -1,0 +1,74 @@
+.main-container {
+  overflow: hidden;
+}
+
+.spacer {
+  height: 10vh;
+}
+
+.slide {
+  position: relative;
+  display: flex;
+  white-space: nowrap;
+}
+
+.phrase {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Reduced gap for mobile */
+  padding: 0 15px; /* Adjusted padding for mobile */
+}
+
+.phrase-text {
+  font-size: 4.5vw; /* Kept relative unit for scalability */
+  font-weight: bold;
+}
+
+.image-wrapper {
+  position: relative;
+  height: 4.5vw; /* Kept relative unit for scalability */
+  aspect-ratio: 2 / 1;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.first-letter {
+  margin-bottom: 2rem; /* Reduced margin for mobile */
+  letter-spacing: -0.02em;
+  background: var(--title-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: fadeIn 0.5s, linear-gradient(90deg, #217bfe 0%, #078efb 33.53%, #ac87eb 67.74%, #ee4d5d 100%);
+}
+
+/* Media query for mobile devices (up to 768px) */
+@media (max-width: 768px) {
+  .spacer {
+    height: 8vh; /* Slightly reduced for mobile */
+  }
+
+  .phrase {
+    gap: 10px; /* Further reduced gap for smaller screens */
+    padding: 0 10px; /* Reduced padding for mobile */
+  }
+
+  .phrase-text {
+    font-size: 6vw; /* Larger relative font size for readability on mobile */
+  }
+
+  .image-wrapper {
+    height: 6vw; /* Slightly larger for better visibility on mobile */
+  }
+
+  .first-letter {
+    margin-bottom: 1.5rem; /* Further reduced margin for mobile */
+    font-size: 0.9em; /* Slightly smaller font size relative to parent */
+  }
+}

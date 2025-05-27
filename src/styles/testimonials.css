@@ -1,0 +1,255 @@
+/* testimonials.css */
+
+/* .aiartcritic__horizontal__section {
+  background: #0a0a0a;
+  padding: 80px 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+} */
+
+.aiartcritic__horizontal__container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+
+.aiartcritic__horizontal__header {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+.aiartcritic__horizontal__stats {
+  font-size: 0.9rem;
+  color: #3b82f6;
+  font-weight: 500;
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+}
+
+.aiartcritic__horizontal__title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: #1f2937;
+  letter-spacing: -0.025em;
+  background: linear-gradient(240deg, #217bfe 0%, #078efb 33.53%, #ac87eb 67.74%, #ee4d5d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.aiartcritic__horizontal__carousel {
+  position: relative;
+}
+
+.aiartcritic__horizontal__testimonials {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+.aiartcritic__horizontal__testimonial {
+  flex: 1;
+  display: flex;
+  gap: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 32px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.aiartcritic__horizontal__testimonial::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(240deg, #217bfe 0%, #078efb 33.53%, #ac87eb 67.74%, #ee4d5d 100%);
+}
+
+.aiartcritic__horizontal__testimonial:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgb(0, 0, 0);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.aiartcritic__horizontal__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.aiartcritic__horizontal__stars {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+
+.aiartcritic__horizontal__star {
+  color: #374151;
+  font-size: 16px;
+  transition: color 0.2s ease;
+}
+
+.aiartcritic__horizontal__star--filled {
+  color: #3b82f6;
+}
+
+.aiartcritic__horizontal__text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #e5e7eb;
+  margin: 0 0 20px 0;
+  font-weight: 400;
+  flex-grow: 1;
+}
+
+.aiartcritic__horizontal__author {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aiartcritic__horizontal__name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f9fafb;
+  letter-spacing: 0.01em;
+}
+
+.aiartcritic__horizontal__role {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.aiartcritic__horizontal__avatar__container {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.aiartcritic__horizontal__avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  /* border: 2px solid rgba(255, 255, 255, 0.1); */
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
+
+.aiartcritic__horizontal__testimonial:hover .aiartcritic__horizontal__avatar {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
+}
+
+/* Navigation */
+.aiartcritic__horizontal__navigation {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.aiartcritic__horizontal__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.aiartcritic__horizontal__dot:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(1.2);
+}
+
+.aiartcritic__horizontal__dot--active {
+  background: #3b82f6;
+  transform: scale(1.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .aiartcritic__horizontal__section {
+    padding: 60px 0;
+  }
+  
+  .aiartcritic__horizontal__container {
+    padding: 0 20px;
+  }
+  
+  .aiartcritic__horizontal__header {
+    margin-bottom: 48px;
+  }
+  
+  .aiartcritic__horizontal__title {
+    font-size: 2rem;
+  }
+  
+  .aiartcritic__horizontal__testimonials {
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  .aiartcritic__horizontal__testimonial {
+    padding: 24px;
+  }
+  
+  .aiartcritic__horizontal__avatar {
+    width: 64px;
+    height: 64px;
+  }
+  
+  .aiartcritic__horizontal__text {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .aiartcritic__horizontal__section {
+    padding: 50px 0;
+  }
+  
+  .aiartcritic__horizontal__container {
+    padding: 0 16px;
+  }
+  
+  .aiartcritic__horizontal__title {
+    font-size: 1.8rem;
+  }
+  
+  .aiartcritic__horizontal__testimonial {
+    flex-direction: row;
+    text-align: center;
+    padding: 20px;
+    gap: 20px;
+  }
+  
+  .aiartcritic__horizontal__content {
+    order: 2;
+  }
+  
+  .aiartcritic__horizontal__avatar__container {
+    order: 1;
+    justify-content: center;
+  }
+  
+  .aiartcritic__horizontal__avatar {
+    width: 72px;
+    height: 72px;
+  }
+  
+  .aiartcritic__horizontal__stars {
+    justify-content: center;
+  }
+}
