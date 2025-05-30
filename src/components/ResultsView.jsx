@@ -583,7 +583,7 @@ const ResultsView = ({ image, feedback, handleReset }) => {
         
         // Website
         pdf.setTextColor(...colors.secondary);
-        pdf.text('https://www.artcritic.vercel.app/', pageWidth - margin - 20, footerY - -7);
+        pdf.text('https://artcritic.vercel.app/', pageWidth - margin - 20, footerY - -7);
       };
 
       // Add footers to all pages
