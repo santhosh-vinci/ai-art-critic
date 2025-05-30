@@ -141,14 +141,14 @@ const ResultsView = ({ image, feedback, handleReset }) => {
     if (isGenerating) return;
     setIsGenerating(true);
 
-    console.log('Using enhanced PDF generation - May 29, 2025 v9');
+    console.log('Using enhanced PDF generation - May 29, 2025 v10');
 
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 25;
-      const contentWidth = pageWidth - margin * 2;
+      const contentWidth = pageWidth - margin * 2.8;
 
       // Color palette
       const colors = {
@@ -261,12 +261,46 @@ const ResultsView = ({ image, feedback, handleReset }) => {
       // Set default font
       pdf.setFont('Helvetica');
 
-      // === HEADER SECTION ===
+      // === BLURRED BACKGROUND SETUP ===
+      let blurredBgData = null;
+      if (image) {
+        try {
+          blurredBgData = await new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = 400;
+              canvas.height = 200;
+              
+              // Draw and blur the image for background
+              ctx.filter = 'blur(15px) opacity(0.3)';
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              resolve(canvas.toDataURL('image/jpeg', 0.6));
+            };
+            img.onerror = () => resolve(null);
+            img.src = image;
+          });
+        } catch (error) {
+          console.warn('Could not create blurred background:', error);
+        }
+      }
+
+      // === HEADER SECTION WITH BLURRED BACKGROUND ===
       let yPosition = margin;
 
-      // Add subtle background for header
-      pdf.setFillColor(248, 249, 250);
-      pdf.rect(0, 0, pageWidth, 60, 'F');
+      // Add blurred artwork background to header
+      if (blurredBgData) {
+        pdf.addImage(blurredBgData, 'JPEG', 0, 0, pageWidth, 80);
+        // Add overlay for better text readability
+        pdf.setFillColor(255, 255, 255, 0.8);
+        pdf.rect(0, 0, pageWidth, 80, 'F');
+      } else {
+        // Fallback gradient background
+        pdf.setFillColor(248, 249, 250);
+        pdf.rect(0, 0, pageWidth, 80, 'F');
+      }
 
       // Main title with enhanced styling
       pdf.setFontSize(28);
@@ -300,7 +334,7 @@ const ResultsView = ({ image, feedback, handleReset }) => {
       pdf.setTextColor(...colors.lightText);
       pdf.text(`Generated on ${currentDate} at ${currentTime}`, margin, yPosition + 42);
 
-      yPosition = 80;
+      yPosition = 90;
 
       // === IMAGE SECTION ===
       if (image) {
@@ -313,30 +347,54 @@ const ResultsView = ({ image, feedback, handleReset }) => {
               canvas.width = img.width;
               canvas.height = img.height;
               canvas.getContext('2d').drawImage(img, 0, 0);
-              resolve(canvas.toDataURL('image/jpeg', 0.8));
+              resolve(canvas.toDataURL('image/jpeg', 0.9));
             };
             img.onerror = () => resolve(null);
             img.src = image;
           });
 
           if (imgData) {
-            // Create a smaller frame for the image to save space
-            const imgWidth = 60;
-            const imgHeight = 60;
+            // Calculate image dimensions to maintain aspect ratio without cropping
+            const img = new Image();
+            img.src = imgData;
+            await new Promise(resolve => {
+              img.onload = resolve;
+            });
+            
+            const maxWidth = 80;
+            const maxHeight = 80;
+            const aspectRatio = img.width / img.height;
+            
+            let imgWidth, imgHeight;
+            if (aspectRatio > 1) {
+              // Landscape
+              imgWidth = maxWidth;
+              imgHeight = maxWidth / aspectRatio;
+            } else {
+              // Portrait or square
+              imgHeight = maxHeight;
+              imgWidth = maxHeight * aspectRatio;
+            }
+            
             const imgX = (pageWidth - imgWidth) / 2;
             
-            // Add the image
+            // Add border frame
+            pdf.setDrawColor(...colors.primary);
+            pdf.setLineWidth(2);
+            pdf.rect(imgX - 2, yPosition - 2, imgWidth + 4, imgHeight + 4);
+            
+            // Add the image without compression or cropping
             pdf.addImage(imgData, 'JPEG', imgX, yPosition, imgWidth, imgHeight);
             
             // Add image caption
-            pdf.setFontSize(8);
+            pdf.setFontSize(9);
             pdf.setFont('Helvetica', 'italic');
             pdf.setTextColor(...colors.lightText);
             const captionText = 'Original Artwork';
             const textWidth = pdf.getTextWidth(captionText);
-            pdf.text(captionText, (pageWidth - textWidth) / 2, yPosition + imgHeight + 8);
+            pdf.text(captionText, (pageWidth - textWidth) / 2, yPosition + imgHeight + 10);
             
-            yPosition += imgHeight + 15;
+            yPosition += imgHeight + 20;
           } else {
             yPosition += 10;
           }
@@ -357,29 +415,39 @@ const ResultsView = ({ image, feedback, handleReset }) => {
       pdf.setFontSize(16);
       pdf.setFont('Helvetica', 'bold');
       pdf.setTextColor(...colors.primary);
-      pdf.text('📋 Analysis & Feedback', margin, yPosition);
+      pdf.text('Analysis & Feedback', margin, yPosition);
       yPosition += 15;
 
       // === CONTENT PROCESSING ===
-      const lines = feedbackText.split('\n');
+        const lines = feedbackText.split('\n');
       let sectionCount = 0;
-      const maxYFirstPage = pageHeight - 80; // Reserve space for footer
-      const maxYSecondPage = pageHeight - 40; // Less footer space on second page
+      const footerSpace = 35; // Space reserved for footer
+      const maxYFirstPage = pageHeight - footerSpace; // More conservative space on first page
+      const maxYOtherPages = pageHeight - footerSpace-4; // Same footer space on other pages
+      let sectionsOnFirstPage = 0;
 
       for (let line of lines) {
         const trimmedLine = line.trim();
         
-        // Check if we need a new page - more aggressive page management
-        const currentMaxY = pdf.getNumberOfPages() === 1 ? maxYFirstPage : maxYSecondPage;
-        if (yPosition > currentMaxY) {
-          if (pdf.getNumberOfPages() >= 2) {
-            // If already on page 2, we need to compress content more aggressively
-            break;
-          }
+        // Check if we need a new page - more conservative approach
+        const currentMaxY = pdf.getNumberOfPages() === 1 ? maxYFirstPage : maxYOtherPages;
+        
+        // For section headers, check if there's enough space for header + some content
+        if (trimmedLine.startsWith('# ') && yPosition > currentMaxY - 40) {
           pdf.addPage();
           yPosition = margin + 10;
           
-          // Add minimal page header on second page
+          // Add minimal page header on subsequent pages
+          pdf.setFontSize(10);
+          pdf.setFont('Helvetica', 'normal');
+          pdf.setTextColor(...colors.lightText);
+          pdf.text('Art Analysis Report (continued)', margin, margin);
+          yPosition = margin + 20;
+        } else if (yPosition > currentMaxY) {
+          pdf.addPage();
+          yPosition = margin + 10;
+          
+          // Add minimal page header on subsequent pages
           pdf.setFontSize(10);
           pdf.setFont('Helvetica', 'normal');
           pdf.setTextColor(...colors.lightText);
@@ -392,86 +460,106 @@ const ResultsView = ({ image, feedback, handleReset }) => {
           sectionCount++;
           const headerText = cleanTextForPDF(trimmedLine.substring(2));
           
-          // Add minimal spacing before new sections
-          if (sectionCount > 1) yPosition += 5;
+          // Track sections on first page
+          if (pdf.getNumberOfPages() === 1) {
+            sectionsOnFirstPage++;
+          }
           
-          // Compact section design
-          pdf.setFillColor(...colors.primary.map(c => c + 20));
-          pdf.rect(margin - 3, yPosition - 6, contentWidth + 6, 15, 'F');
+          // Add spacing before new sections
+          if (sectionCount > 1) yPosition += 8;
+          
+          // Enhanced section design with special colors for Strengths and Suggestions
+          let sectionColor = colors.primary;
+          if (headerText.toLowerCase().includes('strength')) {
+            sectionColor = [34, 139, 34]; // Forest Green
+          } else if (headerText.toLowerCase().includes('suggestion') || headerText.toLowerCase().includes('improve')) {
+            sectionColor = [255, 140, 0]; // Dark Orange
+          }
+          
+          pdf.setFillColor(...sectionColor.map(c => Math.max(c - 10, 0)));
+          pdf.rect(margin - 3, yPosition - 8, contentWidth + 6, 18, 'F');
           
           // Section number
-          pdf.setFontSize(10);
+          pdf.setFontSize(12);
           pdf.setFont('Helvetica', 'bold');
           pdf.setTextColor(255, 255, 255);
-          pdf.text(`${sectionCount}`, margin, yPosition);
+          pdf.text(`${sectionCount}`, margin + 2, yPosition);
           
-          // Section title - handle bold formatting
-          pdf.setFontSize(13);
+          // Section title - bold and colored
+          pdf.setFontSize(14);
           pdf.setFont('Helvetica', 'bold');
           pdf.setTextColor(255, 255, 255);
-          pdf.text(headerText, margin + 12, yPosition);
+          pdf.text(headerText, margin + 15, yPosition);
           
-          yPosition += 18;
+          yPosition += 22;
           
         } else if (trimmedLine.startsWith('## ')) {
           // SUBSECTION HEADER
           const headerText = cleanTextForPDF(trimmedLine.substring(3));
-          yPosition += 3;
+          yPosition += 4;
           
-          // Compact subsection design
-          pdf.setFillColor(250, 250, 252);
-          pdf.rect(margin, yPosition - 4, contentWidth, 12, 'F');
+          // Enhanced subsection design
+          pdf.setFillColor(245, 247, 250);
+          pdf.rect(margin, yPosition - 5, contentWidth, 14, 'F');
           
-          yPosition += addStyledText(headerText, margin + 3, yPosition, {
-            fontSize: 11,
+          // Add left border accent
+          pdf.setFillColor(...colors.accent);
+          pdf.rect(margin, yPosition - 5, 3, 14, 'F');
+          
+          yPosition += addStyledText(headerText, margin + 8, yPosition, {
+            fontSize: 12,
             font: 'bold',
             color: colors.primary,
-            lineHeight: 1.1
+            lineHeight: 1.2
           });
-          yPosition += 3;
+          yPosition += 5;
           
         } else if (trimmedLine.match(/\^\^[^\^]+\^\^/)) {
-          // HIGHLIGHTED SUBHEADING
+          // HIGHLIGHTED SUBHEADING - Bold and colored, no background
           const headerTextMatch = trimmedLine.match(/^(?:[-•]\s*)?\s*\^\^([^\^]+)\^\^\s*(?::\s*|\s*)?(.*)$/);
           if (headerTextMatch) {
             const headerText = headerTextMatch[1];
             const remainingText = headerTextMatch[2] || '';
             
-            yPosition += 2;
+            yPosition += 3;
             
-            // Compact highlight box
-            pdf.setFillColor(...colors.secondary.map(c => Math.min(c + 40, 255)));
-            const headerWidth = pdf.getTextWidth(headerText) + 8;
-            pdf.rect(margin + 5, yPosition - 5, headerWidth, 10, 'F');
-            
-            // Subheading text
-            pdf.setFontSize(10);
+            // Bold colored text without background
+            pdf.setFontSize(11);
             pdf.setFont('Helvetica', 'bold');
-            pdf.setTextColor(255, 255, 255);
-            pdf.text(headerText, margin + 9, yPosition - 1);
-            yPosition += 8;
             
-            // Remaining text - no bullets, just paragraph text
+            // Color based on content
+            let textColor = colors.accent;
+            if (headerText.toLowerCase().includes('strength') || headerText.toLowerCase().includes('good')) {
+              textColor = [34, 139, 34]; // Green
+            } else if (headerText.toLowerCase().includes('improve') || headerText.toLowerCase().includes('suggest')) {
+              textColor = [255, 69, 0]; // Red-Orange
+            }
+            
+            pdf.setTextColor(...textColor);
+            pdf.text(`• ${headerText}`, margin + 8, yPosition);
+            yPosition += 6;
+            
+            // Remaining text
             if (remainingText) {
-              yPosition += addStyledText(remainingText, margin + 8, yPosition, {
-                fontSize: 9,
+              yPosition += addStyledText(remainingText, margin + 12, yPosition, {
+                fontSize: 10,
                 color: colors.text,
-                lineHeight: 1.3
+                lineHeight: 1.4
               });
             }
-            yPosition += 3;
+            yPosition += 4;
           }
           
         } else if (trimmedLine) {
-          // REGULAR TEXT - NO BULLET POINTS
+          // REGULAR TEXT - Clean paragraph style
           const text = trimmedLine.startsWith('• ') ? trimmedLine.substring(2) : trimmedLine;
           
-          yPosition += addStyledText(text, margin + 3, yPosition, {
-            fontSize: 9,
+          yPosition += addStyledText(text, margin + 8, yPosition, {
+            fontSize: 10,
             color: colors.text,
-            lineHeight: 1.3
+            lineHeight: 1.4
           });
-          yPosition += 2;
+          yPosition += 3;
         }
       }
 
@@ -495,7 +583,7 @@ const ResultsView = ({ image, feedback, handleReset }) => {
         
         // Website
         pdf.setTextColor(...colors.secondary);
-        pdf.text('www.artcritic.com', pageWidth - margin - 30, footerY - 8);
+        pdf.text('https://www.artcritic.vercel.app/', pageWidth - margin - 20, footerY - -7);
       };
 
       // Add footers to all pages
@@ -528,7 +616,6 @@ const ResultsView = ({ image, feedback, handleReset }) => {
   return (
     <div className="studio-stage results-stage">
       <div className="results-view">
-         <div className="spacer" style={{ height: "20vh" }} />
         <div className="results-header">
           <h2>Artistic Insights</h2>
           <p>Professional critique and suggestions for improvement</p>
@@ -555,44 +642,44 @@ const ResultsView = ({ image, feedback, handleReset }) => {
                 </>
               ) : (
                 <>
-                Generate PDF
+                  Generate PDF
                 </>
               )}
             </button>
           </div>
 
           <div className="feedback-content">{formatFeedback(feedback)}</div>
-          
-            <div className="spacer" style={{ height: "10vh" }} />
         </div>
       </div>
 
       <style jsx>{`
         .generate-pdf-btn {
-          width: 100%;
-          padding: 14px 20px;
-          margin-top: 12px;
-          background: linear-gradient(90deg,rgb(141, 61, 58) 0%,rgb(222, 167, 58) 100%);
-          color: white;
-          border: none;
-          border-radius: 10px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          font-size: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          box-shadow: 0 4px 15px rgba(91, 58, 141, 0.3);
-        }
-        
-        .generate-pdf-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(91, 58, 141, 0.4);
-          background: linear-gradient(90deg,rgb(141, 61, 58) 20%,rgb(222, 167, 58) 100%);
-          transition: 3 S;
-        }
+  width: 100%;
+  padding: 14px 20px;
+  margin-top: 12px;
+  background: linear-gradient(135deg, rgb(141, 61, 58), rgb(222, 167, 58));
+  background-size: 200% 200%;
+  background-position: left center;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-position 0.8s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(91, 58, 141, 0.3);
+}
+
+.generate-pdf-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(91, 58, 141, 0.4);
+  background-position: right center;
+}
+
         
         .generate-pdf-btn:active:not(:disabled) {
           transform: translateY(0);
